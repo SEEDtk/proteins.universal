@@ -3,6 +3,7 @@
  */
 package org.theseed.proteins.universal;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.theseed.counters.CountMap;
@@ -59,9 +60,21 @@ public class UniversalRoleCounter extends QualityCountMap<Role> {
         }
         // Loop through the counts, updating our master count map.
         for (CountMap<Role>.Count count : this.profiler.counts()) {
-
+            switch (count.getCount()) {
+            case 0:
+                // do nothing
+                break;
+            case 1:
+                // singly-occurring, good
+                this.setGood(count.getKey());
+                break;
+            default:
+                // multiply-occurring, bad
+                this.setBad(count.getKey());
+            }
         }
-        // TODO loop through the roles and count them
+        // Denote we counted this genome.
+        this.genomeCount++;
     }
 
     /**
@@ -78,8 +91,15 @@ public class UniversalRoleCounter extends QualityCountMap<Role> {
      * @param threshold		lowest acceptable fraction score
      */
     public List<Role> universals(double threshold) {
-        // TODO return the universal roles
-        return null;
+        ArrayList<Role> retVal = new ArrayList<Role>(this.size());
+        // Compute the minimum acceptable good count.
+        double minD = (threshold * this.genomeCount);
+        double minF = Math.floor(minD);
+        int min = (minD == minF ? (int) minF - 1 : (int) minF);
+        for (Role role : this.bestKeys()) {
+            if (this.good(role) > min) retVal.add(role);
+        }
+        return retVal;
     }
 
     /**
