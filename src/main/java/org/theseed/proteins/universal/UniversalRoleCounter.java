@@ -3,7 +3,14 @@
  */
 package org.theseed.proteins.universal;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.theseed.counters.CountMap;
@@ -44,6 +51,71 @@ public class UniversalRoleCounter extends QualityCountMap<Role> {
     }
 
     /**
+     * Create a blank universal role counter.
+     */
+    private UniversalRoleCounter() {
+        this.usefulRoles = new RoleMap();
+        this.genomeCount = 0;
+        this.profiler = new CountMap<Role>();
+    }
+
+    /**
+     * Save a universal role counter to a file.
+     * @throws IOException
+     */
+    public void save(File outFile) throws IOException {
+        FileOutputStream fileStream = new FileOutputStream(outFile);
+        DataOutputStream outStream = new DataOutputStream(fileStream);
+        // Write out the genome count.
+        outStream.writeInt(this.genomeCount);
+        // Loop through the roles.  For each one, write the ID, name, and count.
+        Collection<Role> roles = this.usefulRoles.values();
+        outStream.writeInt(roles.size());
+        for (Role role : roles) {
+            outStream.writeUTF(role.getId());
+            outStream.writeUTF(role.getName());
+            outStream.writeInt(this.good(role));
+            outStream.writeInt(this.bad(role));
+        }
+        // Close the stream.
+        outStream.close();
+    }
+
+    /**
+     * Load a universal role counter from a file.
+     * @throws IOException
+     */
+    public static UniversalRoleCounter load(File inFile) throws IOException {
+        FileInputStream fileStream = new FileInputStream(inFile);
+        DataInputStream inStream = new DataInputStream(fileStream);
+        // Create the return object.
+        UniversalRoleCounter retVal = new UniversalRoleCounter();
+        // Read in the genome count.
+        retVal.genomeCount = inStream.readInt();
+        // Read in the role count.
+        int roleCount = inStream.readInt();
+        // Loop through the roles.
+        for (int i = 0; i < roleCount; i++) {
+            // Create the role.
+            String roleId = inStream.readUTF();
+            String roleName = inStream.readUTF();
+            Role role = new Role(roleId, roleName);
+            retVal.usefulRoles.register(role);
+            // Get the counts.
+            int good = inStream.readInt();
+            int bad = inStream.readInt();
+            if (good > 0)
+                retVal.setGood(role, good);
+            if (bad > 0)
+                retVal.setBad(role, bad);
+        }
+        // All done.
+        inStream.close();
+        return retVal;
+    }
+
+
+    /**
      * Count all the roles in the specified genome.
      *
      * @param genome	genome of interest
@@ -80,8 +152,17 @@ public class UniversalRoleCounter extends QualityCountMap<Role> {
     /**
      * @return the number of genomes counted
      */
-    public Object getCounted() {
+    public int getCounted() {
         return this.genomeCount;
+    }
+
+    /**
+     * @return the role with the specified ID, or NULL if no such role exists
+     *
+     * @param roleId	ID of the desired role
+     */
+    public Role getRole(String roleId) {
+        return this.usefulRoles.get(roleId);
     }
 
     /**

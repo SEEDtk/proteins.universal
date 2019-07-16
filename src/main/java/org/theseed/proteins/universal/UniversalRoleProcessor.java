@@ -28,6 +28,10 @@ import org.theseed.proteins.RoleMap;
  * -t			the minimum fraction of role occurrences required for a role to be
  * 				considered universal (default 0.90)
  * -v			write progress messages to STDERR
+ * -o			name of a file to which the counts should be saved, for future comparisons
+ *
+ * --compare	name of a saved count file to which our results should be compared; a universal
+ * 				role in our results should be universal in this file as well
  *
  * The standard output will contain a report listing the universal roles by ID and
  * name, along with number of single occurrences and the number of genomes having
@@ -62,6 +66,15 @@ public class UniversalRoleProcessor {
             usage="file of useful roles (create only)", required=true)
     private File roleFile;
 
+    /** save file */
+    @Option(name="-o", aliases={"--save"}, metaVar="uniRoles.ser",
+            usage="file to which to save results")
+    private File saveFile;
+
+    /** compare file */
+    @Option(name="--compare", metaVar="uniRoles.ser", usage="saved file for comparison")
+    private File compareFile;
+
     /** input genome directories */
     @Argument(index=0, metaVar="genomeDir1 genomeDir2 ...", multiValued=true,
             usage="directory of input genomes")
@@ -81,6 +94,8 @@ public class UniversalRoleProcessor {
         this.threshold = 0.90;
         this.debug = false;
         this.roleFile = null;
+        this.saveFile = null;
+        this.compareFile = null;
         this.genomeDirs = new ArrayList<File>();
         // Parse the command line.
         CmdLineParser parser = new CmdLineParser(this);
@@ -96,6 +111,10 @@ public class UniversalRoleProcessor {
                     if (! genomeDir.isDirectory()) {
                         throw new FileNotFoundException(genomeDir.getPath() + " is not a valid directory.");
                     }
+                }
+                // Insure the compare file exists.
+                if (this.compareFile != null && ! this.compareFile.exists()) {
+                    throw new FileNotFoundException(compareFile.getPath() + " not found on disk.");
                 }
                 // Create the counter.
                 this.counter = new UniversalRoleCounter(usefulRoles);
@@ -127,14 +146,50 @@ public class UniversalRoleProcessor {
                     this.counter.count(genome);
                 }
             }
-            // Get the universal roles.
+            // Save the counters if desired.
+            if (this.saveFile != null) {
+                if (debug) System.err.println("Saving results to " + this.saveFile + ".");
+                this.counter.save(this.saveFile);
+            }
+            // Get the universal roles.  These are our output.
             List<Role> universals = this.counter.universals(this.threshold);
+            // Write the headers.
+            System.out.print("role_id\tdescription\tgood\tbad");
+            // Do we have a compare file? If so, load it and we have extra headings.
+            UniversalRoleCounter comparator = null;
+            int totalCount = 0;
+            int failureCount = 0;
+            if (this.compareFile != null) {
+                if (debug) System.err.println("Loading comparison data from " + this.compareFile + ".");
+                comparator = UniversalRoleCounter.load(compareFile);
+                System.out.println("\ttest_pct\ttest_count\terror");
+            } else {
+                System.out.println();
+            }
             // Write them to the output.
-            System.out.println("role_id\tdescription\tgood\tbad");
             for (Role role : universals) {
-                System.out.format("%s\t%s\t%d\t%d%n", role.getId(),
+                totalCount++;
+                System.out.format("%s\t%s\t%d\t%d", role.getId(),
                         role.getName(), this.counter.good(role),
                         this.counter.bad(role));
+                if (comparator != null) {
+                    // Here we are comparing.
+                    String errorFlag = "";
+                    double score = comparator.score(role);
+                    if (score < this.threshold) {
+                        failureCount++;
+                        errorFlag = "Y";
+                    }
+                    System.out.format("\t%4.2g\t%d\t%s%n", score, comparator.good(role), errorFlag);
+                } else {
+                    System.out.println();
+                }
+            }
+            if (debug) {
+                System.err.println(totalCount + " universal roles found.");
+                if (comparator != null) {
+                    System.err.println("Failure count is " + failureCount + ".");
+                }
             }
         } catch (IOException e) {
             System.err.println(e.getMessage());

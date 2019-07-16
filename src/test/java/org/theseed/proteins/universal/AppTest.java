@@ -8,6 +8,8 @@ import junit.framework.TestSuite;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 import org.theseed.genomes.Contig;
@@ -42,8 +44,9 @@ public class AppTest
 
     /**
      * Dummy test
+     * @throws IOException
      */
-    public void testCounter() {
+    public void testCounter() throws IOException {
         Genome fakeGenome = new Genome("12345.6", "Bacillus praestrigiae Narnia", "Bacteria", 11);
         fakeGenome.addContig(new Contig("con1", "agct", 11));
         fakeGenome.addFeature(new Feature("fig|12345.6.peg.1",  "Role 1", "con1", "+",  100,  300));
@@ -63,7 +66,9 @@ public class AppTest
         Role role4 = roleMap.get("Role4n1");
         Role role5 = roleMap.get("Role5n1");
         Role roleA = roleMap.get("RoleA");
+        Role roleB = roleMap.get("RoleB");
         UniversalRoleCounter newCounter = new UniversalRoleCounter(roleMap);
+        assertThat("GetRole failed.", newCounter.getRole("RoleB"), equalTo(roleB));
         newCounter.count(fakeGenome);
         assertThat("Wrong genome count.", newCounter.getCounted(), equalTo(1));
         List<Role> goodRoles = newCounter.universals(0.60);
@@ -91,6 +96,19 @@ public class AppTest
         assertThat("Wrong good count for role A.", newCounter.good(roleA), equalTo(0));
         assertThat("Wrong bad count for role A.", newCounter.bad(roleA), equalTo(0));
         assertThat("Wrong score for role A.", newCounter.score(roleA), closeTo(0, 0.001));
+        // Test save and load.
+        File saveFile = new File("src/test", "uniCounter.ser");
+        newCounter.save(saveFile);
+        UniversalRoleCounter loadedCounter = UniversalRoleCounter.load(saveFile);
+        assertThat("Genome count not saved properly.", loadedCounter.getCounted(), equalTo(newCounter.getCounted()));
+        for (Role role : roleMap.values()) {
+            assertThat("Role " + role.getId() + " has wrong good count.", loadedCounter.good(role),
+                    equalTo(newCounter.good(role)));
+            assertThat("Role " + role.getId() + " has wrong bad count.", loadedCounter.bad(role),
+                    equalTo(newCounter.bad(role)));
+            Role loadedRole = loadedCounter.getRole(role.getId());
+            assertThat("Role " + role.getId() + " loaded with wrong name.", loadedRole, equalTo(role));
+        }
     }
 
 }
