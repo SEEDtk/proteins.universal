@@ -43,7 +43,7 @@ public class AppTest
     }
 
     /**
-     * Dummy test
+     * Main counting test
      * @throws IOException
      */
     public void testCounter() throws IOException {
