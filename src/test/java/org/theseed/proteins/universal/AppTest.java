@@ -12,9 +12,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import org.theseed.genomes.Contig;
-import org.theseed.genomes.Feature;
-import org.theseed.genomes.Genome;
+import org.theseed.genome.Contig;
+import org.theseed.genome.Feature;
+import org.theseed.genome.Genome;
 import org.theseed.proteins.Role;
 import org.theseed.proteins.RoleMap;
 
