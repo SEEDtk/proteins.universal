@@ -20,7 +20,7 @@ import org.theseed.proteins.RoleMap;
 
 /**
  * This class loads a genome directory and outputs the universal roles.  The positional
- * oarameters are the names of directories of GTOs to process.  The command-line options
+ * parameters are the names of directories of GTOs to process.  The command-line options
  * are as follows.
  *
  * -R			name of a file containing the useful roles; the file is tab-delimited,
