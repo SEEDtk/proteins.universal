@@ -60,13 +60,13 @@ public class AppTest
         fakeGenome.addFeature(new Feature("fig|12345.6.peg.10", "Role 2", "con1", "-", 5401, 5450));
         RoleMap roleMap = new RoleMap();
         roleMap.register("Role 1", "Role 2", "Role 3", "Role 4", "Role 5", "Role A", "Role B");
-        Role role1 = roleMap.get("Role1n1");
-        Role role2 = roleMap.get("Role2n1");
-        Role role3 = roleMap.get("Role3n1");
-        Role role4 = roleMap.get("Role4n1");
-        Role role5 = roleMap.get("Role5n1");
-        Role roleA = roleMap.get("RoleA");
-        Role roleB = roleMap.get("RoleB");
+        Role role1 = roleMap.getItem("Role1n1");
+        Role role2 = roleMap.getItem("Role2n1");
+        Role role3 = roleMap.getItem("Role3n1");
+        Role role4 = roleMap.getItem("Role4n1");
+        Role role5 = roleMap.getItem("Role5n1");
+        Role roleA = roleMap.getItem("RoleA");
+        Role roleB = roleMap.getItem("RoleB");
         UniversalRoleCounter newCounter = new UniversalRoleCounter(roleMap);
         assertThat("GetRole failed.", newCounter.getRole("RoleB"), equalTo(roleB));
         newCounter.count(fakeGenome);
@@ -101,7 +101,7 @@ public class AppTest
         newCounter.save(saveFile);
         UniversalRoleCounter loadedCounter = UniversalRoleCounter.load(saveFile);
         assertThat("Genome count not saved properly.", loadedCounter.getCounted(), equalTo(newCounter.getCounted()));
-        for (Role role : roleMap.values()) {
+        for (Role role : roleMap.objectValues()) {
             assertThat("Role " + role.getId() + " has wrong good count.", loadedCounter.good(role),
                     equalTo(newCounter.good(role)));
             assertThat("Role " + role.getId() + " has wrong bad count.", loadedCounter.bad(role),

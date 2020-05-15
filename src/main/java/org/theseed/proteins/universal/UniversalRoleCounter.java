@@ -69,7 +69,7 @@ public class UniversalRoleCounter extends QualityCountMap<Role> {
         // Write out the genome count.
         outStream.writeInt(this.genomeCount);
         // Loop through the roles.  For each one, write the ID, name, and count.
-        Collection<Role> roles = this.usefulRoles.values();
+        Collection<Role> roles = this.usefulRoles.objectValues();
         outStream.writeInt(roles.size());
         for (Role role : roles) {
             outStream.writeUTF(role.getId());
@@ -162,7 +162,7 @@ public class UniversalRoleCounter extends QualityCountMap<Role> {
      * @param roleId	ID of the desired role
      */
     public Role getRole(String roleId) {
-        return this.usefulRoles.get(roleId);
+        return this.usefulRoles.getItem(roleId);
     }
 
     /**
